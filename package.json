@@ -1,0 +1,40 @@
+{
+  "name": "assure-whatsapp-sdk",
+  "private": true,
+  "version": "0.0.0",
+  "description": "TypeScript packages for Meta's WhatsApp Business Platform Cloud API \u2014 types, client, and webhook primitives.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.10"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @assure-ai/whatsapp-types && npm run build -w @assure-ai/whatsapp-webhooks && npm run build -w @assure-ai/whatsapp-api",
+    "typecheck": "npm run build && npm run typecheck --workspaces --if-present && tsc --noEmit -p examples/tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "npm run typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "rm -rf packages/*/dist packages/*/*.tsbuildinfo",
+    "pack:check": "node scripts/check-tarballs.mjs",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "npm run build && changeset publish",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.7",
+    "@types/node": "^22.10.2",
+    "prettier": "^3.4.2",
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/assure-chat/whatsapp-sdk.git"
+  }
+}

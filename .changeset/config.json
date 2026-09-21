@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    ["@assure-ai/whatsapp-types", "@assure-ai/whatsapp-api", "@assure-ai/whatsapp-webhooks"]
+  ],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}

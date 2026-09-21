@@ -1,0 +1,57 @@
+{
+  "name": "@assure-ai/whatsapp-webhooks",
+  "version": "0.1.0",
+  "description": "Framework-neutral WhatsApp Cloud API webhook primitives — subscription challenge verification, raw-body X-Hub-Signature-256 verification, typed parsing, and normalized events.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.10"
+  },
+  "files": [
+    "dist",
+    "!dist/*.tsbuildinfo",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "keywords": [
+    "whatsapp",
+    "webhooks",
+    "cloud-api",
+    "meta",
+    "x-hub-signature-256",
+    "hmac"
+  ],
+  "dependencies": {
+    "@assure-ai/whatsapp-types": "0.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/assure-chat/whatsapp-sdk.git",
+    "directory": "packages/whatsapp-webhooks"
+  },
+  "homepage": "https://github.com/assure-chat/whatsapp-sdk/tree/main/packages/whatsapp-webhooks#readme",
+  "bugs": {
+    "url": "https://github.com/assure-chat/whatsapp-sdk/issues"
+  },
+  "author": "Assure, Inc."
+}

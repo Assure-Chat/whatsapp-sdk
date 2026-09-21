@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      # --ignore-scripts: nothing in this tree needs an install hook, and a
+      # dependency that wants one is a finding rather than a convenience.
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: npm test
+      - run: npm run typecheck
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run format:check
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      # Fails if a tarball would ship a .env, sources, fixtures, coverage,
+      # key material, or an .npmrc.
+      - run: npm run pack:check
+
+  edge-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      # No --allow-net and no --allow-env: if any package reached for the
+      # network or an environment variable, Deno would refuse and this fails.
+      - run: deno run --allow-read scripts/deno-smoke.ts
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # These packages have no runtime dependencies, so a production advisory
+      # is a real regression rather than noise from the dev tree.
+      - run: npm audit --omit=dev --audit-level=low
+      - name: Fail on a non-@assure-ai runtime dependency
+        run: |
+          node -e '
+            const { readdirSync, readFileSync } = require("node:fs");
+            let failed = false;
+            for (const dir of readdirSync("packages")) {
+              const manifest = JSON.parse(readFileSync(`packages/${dir}/package.json`, "utf8"));
+              for (const name of Object.keys(manifest.dependencies ?? {})) {
+                if (!name.startsWith("@assure-ai/")) {
+                  console.error(`${manifest.name} depends on ${name}`);
+                  failed = true;
+                }
+              }
+            }
+            process.exit(failed ? 1 : 0);
+          '
+      - run: npm ls --omit=dev --all
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Reject committed env files and obvious Meta token shapes
+        run: |
+          if git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$'; then
+            echo "::error::A .env file is committed."
+            exit 1
+          fi
+          # Meta user/business tokens start EAA followed by a long base64 run.
+          if git grep -nIE 'EAA[A-Za-z0-9]{60,}' -- . ':!docs/maintainers.md'; then
+            echo "::error::A value shaped like a Meta access token is committed."
+            exit 1
+          fi
+
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      # `npm ci` fails outright when the lockfile and manifests disagree.
+      - run: npm ci --ignore-scripts
+      - name: Fail if the lockfile is dirty
+        run: git diff --exit-code -- package-lock.json

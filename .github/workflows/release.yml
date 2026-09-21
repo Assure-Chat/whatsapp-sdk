@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Publishing is OFF until an owner turns it on deliberately. See
+    # docs/release-readiness.md — nothing has been published from this repo.
+    if: ${{ vars.NPM_PUBLISH_ENABLED == 'true' }}
+    permissions:
+      contents: write
+      pull-requests: write
+      # Required for npm trusted publishing (OIDC) and provenance. No
+      # long-lived automation token is used or needed.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: npm test
+      - run: npm run pack:check
+      # Opens a "Version Packages" PR; merging it publishes.
+      - uses: changesets/action@v1
+        with:
+          version: npm run version-packages
+          publish: npm run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Attest that each tarball was built from this commit in this workflow.
+          NPM_CONFIG_PROVENANCE: true

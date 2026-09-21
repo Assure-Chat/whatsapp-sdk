@@ -1,0 +1,54 @@
+{
+  "name": "@assure-ai/whatsapp-types",
+  "version": "0.1.0",
+  "description": "TypeScript types for Meta's WhatsApp Business Platform Cloud API — branded identifiers, message and template contracts, webhook envelopes, and Assure's normalized event union.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.10"
+  },
+  "files": [
+    "dist",
+    "!dist/*.tsbuildinfo",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "keywords": [
+    "whatsapp",
+    "whatsapp-business",
+    "cloud-api",
+    "meta",
+    "graph-api",
+    "types"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/assure-chat/whatsapp-sdk.git",
+    "directory": "packages/whatsapp-types"
+  },
+  "homepage": "https://github.com/assure-chat/whatsapp-sdk/tree/main/packages/whatsapp-types#readme",
+  "bugs": {
+    "url": "https://github.com/assure-chat/whatsapp-sdk/issues"
+  },
+  "author": "Assure, Inc."
+}
