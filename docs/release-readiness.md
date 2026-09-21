@@ -1,10 +1,16 @@
 # Release readiness
 
-**Nothing in this repository has been published.** No npm package, no dist-tag, no git tag,
-no GitHub release. No Meta setting was changed, no webhook was configured, no phone number
-was registered, no OAuth code was exchanged, and no message was sent.
+**Source is on GitHub. Nothing is published to npm yet.**
 
-This document is the remaining human checklist.
+| Step                     | State                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------ |
+| Git repository           | Done — [`Assure-Chat/whatsapp-sdk`](https://github.com/Assure-Chat/whatsapp-sdk), public, `main` |
+| CI                       | Green — all 9 jobs, including Node 20, 22, and 24                                                |
+| npm publish              | **Not done.** Awaiting a maintainer running the commands below                                   |
+| Git tag / GitHub release | Not created                                                                                      |
+
+No Meta setting was changed, no webhook was configured, no phone number was registered,
+no OAuth code was exchanged, and no message was sent.
 
 ## Current state
 
@@ -21,12 +27,6 @@ under it with `jtjessup <jon@1440.io>` as maintainer — so there is no ownershi
 Because these are new names, `0.1.0` is a first publish rather than a version reset. There
 is no existing version history to preserve. **Once published, the names and the semver
 line are permanent**: a later change must be compatible or a major.
-
-A changeset for the initial release is staged in `.changeset/initial-release.md`. Running
-`npm run version-packages` would move all three to `0.2.0` in lockstep (they are `fixed`
-in the changesets config). Decide before releasing whether the first public version should
-be `0.1.0` or `0.2.0`; if `0.1.0`, publish from the current manifests and treat the
-changeset as the changelog entry.
 
 ## Decisions taken
 
