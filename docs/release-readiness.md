@@ -28,38 +28,29 @@ in the changesets config). Decide before releasing whether the first public vers
 be `0.1.0` or `0.2.0`; if `0.1.0`, publish from the current manifests and treat the
 changeset as the changelog entry.
 
-## Before a human releases
+## Decisions taken
 
-### 1. Review
+| Decision                               | Value                                                                                  |
+| -------------------------------------- | -------------------------------------------------------------------------------------- |
+| Repository                             | `Assure-Chat/whatsapp-sdk`, **public**, matching the sibling `Assure-Chat/infobip-sdk` |
+| License                                | MIT, `Copyright (c) 2026 Assure, Inc.`                                                 |
+| First version                          | **0.1.0**, published from the current manifests                                        |
+| Publish method                         | **Manual**, from a maintainer's terminal                                               |
+| Graph API version in docs and examples | `v24.0`                                                                                |
 
-- [ ] Read the full diff with an eye for secrets. The automated checks are in CI, but the
-      guarantee worth having is that a person looked.
-- [ ] Confirm the license decision. Currently **MIT**, matching the sibling
-      `assure-infobip-sdk` repo, with `Copyright (c) 2026 Assure, Inc.` If Assure wants
-      these private instead, set `"private": true` and `"license": "UNLICENSED"` on each
-      package before doing anything else.
-- [ ] Confirm the repository URL. The manifests point at
-      `github.com/assure-chat/whatsapp-sdk`, which follows the sibling repo's convention
-      but **does not exist yet**. Create it, or change the URLs.
-- [ ] Confirm the Graph API version the docs and examples pin (`v24.0`) is the one Assure
-      intends to run.
+The staged changeset in `.changeset/initial-release.md` is the changelog entry for 0.1.0.
+Do **not** run `npm run version-packages` before this first publish — it would bump all
+three to 0.2.0. Run it for the _next_ release.
 
-### 2. Put it in version control
+## Publishing 0.1.0 manually
 
-This working tree is **not a git repository**. Before anything else:
+Publishing is irreversible: the names and the semver line are permanent from that moment,
+and an unpublish is only possible within 72 hours and only under npm's policy.
+
+### 1. Build and verify from a clean tree
 
 ```bash
 cd /Users/jtjessup/WhatsApp-API
-git init
-git add .
-git commit -m "Initial Assure WhatsApp SDK"
-```
-
-`.gitignore` already excludes `node_modules/`, `dist/`, coverage, and every `.env` form.
-
-### 3. Verify locally
-
-```bash
 npm ci --ignore-scripts
 npm run build
 npm test
@@ -69,36 +60,72 @@ npm run pack:check
 deno run --allow-read scripts/deno-smoke.ts
 ```
 
-### 4. Set up publishing
+`pack:check` is the one that matters most here — it fails if a tarball would ship a
+`.env`, sources, fixtures, coverage, key material, or an `.npmrc`.
 
-The release workflow is written but **gated off**: it runs only when the repository
-variable `NPM_PUBLISH_ENABLED` is set to `true`.
-
-It uses npm **trusted publishing via OIDC** with provenance (`id-token: write`,
-`NPM_CONFIG_PROVENANCE: true`) and **no long-lived automation token**. To enable:
-
-- [ ] On npmjs.com, configure a trusted publisher for each of the three package names,
-      pointing at `assure-chat/whatsapp-sdk` and the `release.yml` workflow.
-- [ ] Set the repository variable `NPM_PUBLISH_ENABLED=true`.
-- [ ] Do **not** add an `NPM_TOKEN` secret. If trusted publishing cannot be used, that is
-      a decision to make explicitly, not to work around by adding a token.
-
-The sibling `assure-infobip-sdk` repo currently uses an `NPM_TOKEN` secret. This repo
-deliberately does not follow that part of its convention; if the two should match,
-converting the sibling to OIDC is the better direction.
-
-### 5. First publish
+### 2. Authenticate
 
 ```bash
-npm run changeset        # if the staged one needs adjusting
-npm run version-packages # updates versions and CHANGELOGs
-# review the diff, commit, push
+npm login
+npm whoami   # expect: jtjessup
 ```
 
-Merging the resulting "Version Packages" PR publishes. Then:
+Confirm the `@assure-ai` scope is visible to this account:
 
-- [ ] Confirm all three appear on npm with provenance attestations.
-- [ ] Confirm the tarball contents match what `npm run pack:check` reported.
+```bash
+npm access list packages @assure-ai 2>/dev/null || npm view @assure-ai/infobip-types maintainers
+```
+
+### 3. Publish, types first
+
+The other two declare an exact dependency on `@assure-ai/whatsapp-types@0.1.0`, so it has
+to exist on the registry before they do.
+
+```bash
+npm publish -w @assure-ai/whatsapp-types    --access public
+npm publish -w @assure-ai/whatsapp-webhooks --access public
+npm publish -w @assure-ai/whatsapp-api      --access public
+```
+
+With 2FA enabled, append `--otp=<code>` to each. Add `--dry-run` first to any command you
+want to see the effect of without publishing.
+
+### 4. Confirm
+
+```bash
+npm view @assure-ai/whatsapp-types version
+npm view @assure-ai/whatsapp-api version
+npm view @assure-ai/whatsapp-webhooks version
+
+# In a scratch directory, prove a real consumer install works:
+mkdir -p /tmp/wa-consumer && cd /tmp/wa-consumer && npm init -y >/dev/null
+npm install @assure-ai/whatsapp-api
+node --input-type=module -e "import {createWhatsAppClient} from '@assure-ai/whatsapp-api'; console.log(typeof createWhatsAppClient)"
+```
+
+### 5. Tag the release
+
+```bash
+cd /Users/jtjessup/WhatsApp-API
+git tag -a v0.1.0 -m "v0.1.0"
+git push origin v0.1.0
+```
+
+## Switching to trusted publishing later
+
+`.github/workflows/release.yml` is written and **gated off** — it runs only when the
+repository variable `NPM_PUBLISH_ENABLED` is `true`. It uses npm trusted publishing via
+OIDC with provenance and **no long-lived token**. To move to it for a later release:
+
+- [ ] On npmjs.com, configure a trusted publisher for each of the three package names,
+      pointing at `Assure-Chat/whatsapp-sdk` and `release.yml`.
+- [ ] Set the repository variable `NPM_PUBLISH_ENABLED=true`.
+- [ ] Do **not** add an `NPM_TOKEN` secret. If trusted publishing cannot be used, that is a
+      decision to make explicitly, not to work around by adding a token.
+
+The sibling `assure-infobip-sdk` repo uses an `NPM_TOKEN` secret. This repo deliberately
+does not follow that part of its convention; converting the sibling to OIDC is the better
+direction if the two should match.
 
 ### 6. First consumption from Assure
 
